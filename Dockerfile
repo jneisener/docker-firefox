@@ -5,7 +5,7 @@
 #
 
 # Build the membarrier check tool.
-FROM alpine:3.23 AS membarrier
+FROM alpine:3.24 AS membarrier
 WORKDIR /tmp
 COPY membarrier_check.c .
 RUN apk --no-cache add build-base linux-headers
