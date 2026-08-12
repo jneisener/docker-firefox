@@ -21,6 +21,8 @@ jobs:
   build:
     name: Build image
     runs-on: ubuntu-24.04
+    env:
+      CACHE_IMAGE: ghcr.io/${{ github.repository }}:buildcache
 
     steps:
 #      - name: Free disk space
@@ -113,8 +115,8 @@ jobs:
           tags: ${{ steps.prep.outputs.tags }}
           build-args: |
             DOCKER_IMAGE_VERSION=${{ steps.prep.outputs.label_version }}
-          cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-          cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
+          cache-from: type=registry,ref=${{ env.CACHE_IMAGE }}
+          cache-to: ${{ github.ref == 'refs/heads/master' && format('type=registry,ref={0},mode=max', env.CACHE_IMAGE) || '' }}
 
       - uses: actions-ecosystem/action-push-tag@6e82caefe706f5a729e354df7443dc82f98a414f # v1.0.0
         if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
