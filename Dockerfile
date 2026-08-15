@@ -13,7 +13,7 @@ RUN gcc -static -o membarrier_check membarrier_check.c
 RUN strip membarrier_check
 
 # Pull base image.
-FROM jlesage/baseimage-gui:alpine-3.24-v4.13.1@sha256:69c5c271766ca3edea7390966ed9c3f9ffee813096f6c77a333f182bef86e0cb
+FROM jlesage/baseimage-gui:alpine-3.24-v4.13.2@sha256:2607b269743123b164a2bc33eb35ea6dd77789b5111a14eedfac638a77825fc3
 
 # Docker image version is provided via build arg.
 ARG DOCKER_IMAGE_VERSION=
