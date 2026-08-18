@@ -21,8 +21,6 @@ jobs:
   build:
     name: Build image
     runs-on: ubuntu-24.04
-    env:
-      CACHE_IMAGE: ghcr.io/${{ github.repository }}:buildcache
 
     steps:
 #      - name: Free disk space
@@ -70,17 +68,23 @@ jobs:
             TAGS="$TAGS,${{ env.DOCKER_IMAGE_NAME }}:latest"
           fi
           TAGS="$TAGS,$(echo $TAGS | tr ',' '\n' | sed 's|^|ghcr.io/|' | tr '\n' ',')"
+          # Determine the Docker cache image.
+          name="${GITHUB_REPOSITORY#*/}"
+          name="${name#docker-}"
+          CACHE_IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER}/${name}:buildcache"
           # Print results.
           echo "::group::Results"
           echo "Github reference: $GITHUB_REF"
           echo "Docker container version: $VERSION"
           echo "Docker container version label: $LABEL_VERSION"
           echo "Docker container tag(s): $TAGS"
+          echo "Docker cache image: $CACHE_IMAGE"
           echo "::endgroup::"
           # Export outputs.
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "label_version=${LABEL_VERSION}" >> $GITHUB_OUTPUT
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "CACHE_IMAGE=${CACHE_IMAGE}" >> $GITHUB_ENV
           #echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
       - name: Setup QEMU
