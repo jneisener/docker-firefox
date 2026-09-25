@@ -4,6 +4,21 @@
 # https://github.com/jneisener/docker-firefox
 #
 
+# Docker image version is provided via build arg.
+ARG DOCKER_IMAGE_VERSION=
+
+# Define software versions.
+ARG FIREFOX_VERSION=151.0.3-r0
+#ARG PROFILE_CLEANER_VERSION=2.36
+ARG NSPR_VERSION=4.38.2
+
+# Define software download URLs.
+#ARG PROFILE_CLEANER_URL=https://github.com/graysky2/profile-cleaner/raw/v${PROFILE_CLEANER_VERSION}/common/profile-cleaner.in
+ARG NSPR_URL=https://ftp.mozilla.org/pub/mozilla.org/nspr/releases/v${NSPR_VERSION}/src/nspr-${NSPR_VERSION}.tar.gz
+
+# Get Dockerfile cross-compilation helpers.
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+
 # Build the membarrier check tool.
 FROM docker.io/library/alpine:3.24 AS membarrier
 WORKDIR /tmp
@@ -11,6 +26,18 @@ COPY membarrier_check.c .
 RUN apk --no-cache add build-base linux-headers
 RUN gcc -static -o membarrier_check membarrier_check.c
 RUN strip membarrier_check
+
+# Rebuild NSPR with 64-bit file offsets (Alpine's package caps PR_Seek64 at 2GiB on musl).
+FROM --platform=$BUILDPLATFORM alpine:3.24 AS nspr
+ARG TARGETPLATFORM
+ARG NSPR_URL
+COPY --from=xx / /
+COPY src/nspr /build
+RUN /build/build.sh "$NSPR_URL"
+RUN xx-verify \
+    /tmp/nspr-install/usr/lib/libnspr4.so \
+    /tmp/nspr-install/usr/lib/libplc4.so \
+    /tmp/nspr-install/usr/lib/libplds4.so
 
 # Pull base image.
 FROM jlesage/baseimage-gui:alpine-3.24-v4.14.0@sha256:4a9e01d57ca8ef2eb39ffda757c15bf388ef4da90f595dc5acbc70a71c785a13
@@ -88,6 +115,9 @@ RUN \
 # Add files.
 COPY rootfs/ /
 COPY --from=membarrier /tmp/membarrier_check /usr/bin/
+COPY --from=nspr /tmp/nspr-install/usr/lib/libnspr4.so* /usr/lib/
+COPY --from=nspr /tmp/nspr-install/usr/lib/libplc4.so* /usr/lib/
+COPY --from=nspr /tmp/nspr-install/usr/lib/libplds4.so* /usr/lib/
 
 # Set internal environment variables.
 RUN \
